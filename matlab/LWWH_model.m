@@ -101,7 +101,7 @@ title('Langmuir-Hinshelwood-Hougen-Watson Kinetics Fit');
 grid on;
 %}
 
-
+%{
 % Sample data: Concentrations of A and B and observed reaction rate
 A_conc = [0.1, 0.2, 0.1, 0.3, 0.2, 0.3, 0.4, 0.5]; % Concentration of A (mol/L)
 B_conc = [0.1, 0.1, 0.2, 0.2, 0.3, 0.3, 0.4, 0.4]; % Concentration of B (mol/L)
@@ -166,4 +166,76 @@ ylabel('[B] (mol/L)');
 zlabel('Rate (mol/L·s)');
 legend('Observed Data', 'Fitted Model');
 title('Generalized Langmuir-Hinshelwood-Hougen-Watson Kinetics Fit');
+grid on;
+
+
+% Initial guess for the parameters: [k, K_A] (for 1 reactant: [k, K_A])
+initial_guess = [1, 1];  % For one reactant A
+
+% Combine concentrations A into a single matrix for convenience
+xdata = A_conc'; % Each row of `xdata` corresponds to [A]
+
+% Perform nonlinear regression using 'lsqcurvefit' to minimize the sum of squared errors
+options = optimset('Display', 'off'); % Turn off display during optimization
+[params_est, resnorm, residual, exitflag, output] = lsqcurvefit(GLHHW_eqn, initial_guess, xdata, rate', [], [], options);
+
+% Extract estimated parameters
+k_est = params_est(1);
+K_A_est = params_est(2);
+
+fprintf('Estimated Parameters:\n');
+fprintf('Rate constant (k) = %.4f\n', k_est);
+fprintf('Adsorption constant for A (K_A) = %.4f\n', K_A_est);
+
+% Predicted rate
+predicted_rate = GLHHW_eqn(params_est, xdata);
+
+% Plot
+figure;
+plot(A_conc, rate, 'bo', 'MarkerFaceColor', 'b');
+hold on;
+plot(A_conc, predicted_rate, 'r-', 'LineWidth', 2);
+xlabel('[A] (mol/L)');
+ylabel('Rate (mol/L·s)');
+legend('Observed', 'Fitted');
+title('GLHHW Fit — Single Reactant');
+grid on;
+%}
+
+% Sample data: Concentration of A and observed reaction rate
+A_conc = [0.1, 0.2, 0.3, 0.4, 0.5]; % Concentration of A (mol/L)
+rate = [0.15, 0.25, 0.35, 0.45, 0.50]; % Observed reaction rate (mol/L·s)
+
+% Define simplified GLHHW rate equation for ONE reactant
+GLHHW_eqn = @(params, A) (params(1) * params(2) .* A) ./ (1 + params(2) .* A);
+% params(1) = k, params(2) = K_A
+
+% Initial guess for parameters [k, K_A]
+initial_guess = [1, 1];
+
+% Perform nonlinear regression using lsqcurvefit
+options = optimset('Display', 'off');
+[params_est, resnorm, residual, exitflag, output] = lsqcurvefit(GLHHW_eqn, initial_guess, A_conc', rate', [], [], options);
+
+% Extract estimated parameters
+k_est = params_est(1);
+K_A_est = params_est(2);
+
+% Display estimated parameters
+fprintf('Estimated Parameters:\n');
+fprintf('Rate constant (k) = %.4f\n', k_est);
+fprintf('Adsorption constant for A (K_A) = %.4f\n', K_A_est);
+
+% Predicted rates
+predicted_rate = GLHHW_eqn(params_est, A_conc');
+
+% Plot observed vs. predicted rates
+figure;
+plot(A_conc, rate, 'bo', 'MarkerFaceColor', 'b');
+hold on;
+plot(A_conc, predicted_rate, 'r-', 'LineWidth', 2);
+xlabel('[A] (mol/L)');
+ylabel('Rate (mol/L·s)');
+legend('Observed Data', 'Fitted Model');
+title('GLHHW Model Fit (Single Reactant)');
 grid on;
